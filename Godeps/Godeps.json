@@ -4,5 +4,16 @@
 	"Packages": [
 		"./..."
 	],
-	"Deps": []
+	"Deps": [
+		{
+			"ImportPath": "github.com/moovweb/gokogiri",
+			"Comment": "4.8.28-35-geafc181",
+			"Rev": "eafc181356de1da75468a7bdf54b430393f9c0e3"
+		},
+		{
+			"ImportPath": "github.com/moovweb/rubex",
+			"Comment": "3.5.341-5-gb3d9ff6",
+			"Rev": "b3d9ff6ad7d9b14f94a91c8271cd9ad9e77132e5"
+		}
+	]
 }
