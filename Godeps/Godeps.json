@@ -1,0 +1,8 @@
+{
+	"ImportPath": "github.com/charlieegan3/surjest",
+	"GoVersion": "go1.5.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": []
+}
