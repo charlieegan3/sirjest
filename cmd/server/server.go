@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/kennygrant/sanitize"
 	"github.com/moovweb/gokogiri"
 	"github.com/moovweb/gokogiri/css"
 )
@@ -25,8 +26,26 @@ type searchEngine struct {
 var searchEngines = map[string]searchEngine{
 	"google": searchEngine{
 		name:       "Google",
-		docQuery:   css.Convert("#center_col > div > div > a > b > i", 0) + "/text()[1]",
+		docQuery:   css.Convert("#center_col > div > div > a", 0),
 		baseURL:    "https://www.google.co.uk/search",
+		queryParam: "q",
+	},
+	"yahoo": searchEngine{
+		name:       "Yahoo",
+		docQuery:   css.Convert(".compTitle > span > a", 0),
+		baseURL:    "https://uk.search.yahoo.com/search",
+		queryParam: "p",
+	},
+	"bing": searchEngine{
+		name:       "Bing",
+		docQuery:   css.Convert("#sp_requery > h2 > a", 0),
+		baseURL:    "https://www.bing.com/search",
+		queryParam: "q",
+	},
+	"duckduckgo": searchEngine{
+		name:       "DuckDuckGo",
+		docQuery:   css.Convert("#did_you_mean > a", 0),
+		baseURL:    "https://duckduckgo.com/html",
 		queryParam: "q",
 	},
 }
@@ -59,11 +78,13 @@ func getCorrection(engine string, queryString string) string {
 	result, err := doc.Root().Search(searchEngines[engine].docQuery)
 
 	correction := "NULL"
-	if err == nil && len(result) == 1 {
+	if err == nil && len(result) > 0 {
 		correction = fmt.Sprintf("%v", result[0])
+	} else if err != nil {
+		fmt.Println(err)
 	}
 	doc.Free()
-	return correction
+	return sanitize.HTML(correction)
 }
 
 func main() {

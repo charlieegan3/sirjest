@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/kennygrant/sanitize",
+			"Comment": "v1.0",
+			"Rev": "ce9fd1f6ce32afaa38b51feea32320fc8875e8e4"
+		},
+		{
 			"ImportPath": "github.com/moovweb/gokogiri",
 			"Comment": "4.8.28-35-geafc181",
 			"Rev": "eafc181356de1da75468a7bdf54b430393f9c0e3"
@@ -14,6 +19,10 @@
 			"ImportPath": "github.com/moovweb/rubex",
 			"Comment": "3.5.341-5-gb3d9ff6",
 			"Rev": "b3d9ff6ad7d9b14f94a91c8271cd9ad9e77132e5"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "b4e17d61b15679caf2335da776c614169a1b4643"
 		}
 	]
 }
