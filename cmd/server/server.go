@@ -53,7 +53,7 @@ func getCorrection(engine string, queryString string) string {
 	result, err := doc.Root().Search(searchEngines[engine].docQuery)
 
 	correction := "NULL"
-	if err == nil || len(result) == 1 {
+	if err == nil && len(result) == 1 {
 		correction = fmt.Sprintf("%v", result[0])
 	}
 	doc.Free()
