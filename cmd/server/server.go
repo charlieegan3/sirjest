@@ -60,14 +60,14 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildUrl(engine string, queryString string) string {
-	var Url *url.URL
-	Url, _ = url.Parse(searchEngines[engine].baseURL)
+	var endpoint *url.URL
+	endpoint, _ = url.Parse(searchEngines[engine].baseURL)
 
 	parameters := url.Values{}
 	parameters.Add(searchEngines[engine].queryParam, queryString)
-	Url.RawQuery = parameters.Encode()
+	endpoint.RawQuery = parameters.Encode()
 
-	return Url.String()
+	return endpoint.String()
 }
 
 func getCorrection(engine string, queryString string) string {
@@ -89,6 +89,7 @@ func getCorrection(engine string, queryString string) string {
 
 func main() {
 	port := os.Getenv("PORT")
+	fmt.Printf("Listening on port %v\n", port)
 
 	http.HandleFunc("/", index)
 	http.ListenAndServe(":"+port, nil)
