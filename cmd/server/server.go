@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/kennygrant/sanitize"
 	"github.com/moovweb/gokogiri"
@@ -17,41 +18,47 @@ import (
 var googleDocQuery string = css.Convert("#center_col > div > div > a > b > i", 0) + "/text()[1]"
 
 type searchEngine struct {
-	name       string
-	docQuery   string
-	baseURL    string
-	queryParam string
+	name               string
+	baseURL            string
+	queryParam         string
+	suggestedTermQuery string
+	topLinkQuery       string
 }
 
 type correctionResult struct {
-	engine     string
-	correction string
+	engine        string
+	SuggestedTerm string
+	TopLink       string
 }
 
 var searchEngines = map[string]searchEngine{
 	"google": searchEngine{
-		name:       "Google",
-		docQuery:   css.Convert("#center_col > div > div > a", 0),
-		baseURL:    "https://www.google.co.uk/search",
-		queryParam: "q",
+		name:               "Google",
+		baseURL:            "https://www.google.co.uk/search",
+		queryParam:         "q",
+		suggestedTermQuery: css.Convert("#center_col > div > div > a", 0),
+		topLinkQuery:       css.Convert("cite", 0),
 	},
 	"yahoo": searchEngine{
-		name:       "Yahoo",
-		docQuery:   css.Convert(".compTitle > span > a", 0),
-		baseURL:    "https://uk.search.yahoo.com/search",
-		queryParam: "p",
+		name:               "Yahoo",
+		baseURL:            "https://uk.search.yahoo.com/search",
+		queryParam:         "p",
+		suggestedTermQuery: css.Convert(".compTitle > span > a", 0),
+		topLinkQuery:       css.Convert("ol > li > div > div > div > span", 0),
 	},
 	"bing": searchEngine{
-		name:       "Bing",
-		docQuery:   css.Convert("#sp_requery > h2 > a", 0),
-		baseURL:    "https://www.bing.com/search",
-		queryParam: "q",
+		name:               "Bing",
+		baseURL:            "https://www.bing.com/search",
+		queryParam:         "q",
+		suggestedTermQuery: css.Convert("#sp_requery > h2 > a", 0),
+		topLinkQuery:       css.Convert("cite", 0),
 	},
 	"duckduckgo": searchEngine{
-		name:       "DuckDuckGo",
-		docQuery:   css.Convert("#did_you_mean > a", 0),
-		baseURL:    "https://duckduckgo.com/html",
-		queryParam: "q",
+		name:               "DuckDuckGo",
+		baseURL:            "https://duckduckgo.com/html",
+		queryParam:         "q",
+		suggestedTermQuery: css.Convert("#did_you_mean > a", 0),
+		topLinkQuery:       css.Convert(".url", 0),
 	},
 }
 
@@ -61,10 +68,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 		go getCorrection(k, r.FormValue("q"), c)
 	}
 
-	var corrections = map[string]string{}
+	var corrections = map[string]correctionResult{}
 	for i := 0; i < len(searchEngines); i++ {
 		r := <-c
-		corrections[r.engine] = r.correction
+		corrections[r.engine] = r
 	}
 	jsonString, _ := json.Marshal(corrections)
 	io.WriteString(w, string(jsonString))
@@ -86,16 +93,30 @@ func getCorrection(engine string, queryString string, c chan correctionResult) {
 	page, _ := ioutil.ReadAll(resp.Body)
 	doc, _ := gokogiri.ParseHtml(page)
 
-	result, err := doc.Root().Search(searchEngines[engine].docQuery)
+	suggestedTermResult, err := doc.Root().Search(searchEngines[engine].suggestedTermQuery)
 
-	correction := "NULL"
-	if err == nil && len(result) > 0 {
-		correction = fmt.Sprintf("%v", result[0])
+	suggestedTerm := "NULL"
+	if err == nil && len(suggestedTermResult) > 0 {
+		suggestedTerm = fmt.Sprintf("%v", suggestedTermResult[0])
 	} else if err != nil {
 		fmt.Println(err)
 	}
+
+	topLinkResult, err := doc.Root().Search(searchEngines[engine].topLinkQuery)
+
+	topLink := "NULL"
+	if err == nil && len(topLinkResult) > 0 {
+		topLink = fmt.Sprintf("%v", topLinkResult[0])
+	} else if err != nil {
+		fmt.Println(err)
+	}
+
 	doc.Free()
-	c <- correctionResult{engine: engine, correction: sanitize.HTML(correction)}
+	c <- correctionResult{
+		engine:        engine,
+		SuggestedTerm: sanitize.HTML(suggestedTerm),
+		TopLink:       strings.Replace(sanitize.HTML(topLink), " ", "", -1),
+	}
 }
 
 func main() {
