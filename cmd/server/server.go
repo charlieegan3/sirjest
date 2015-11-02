@@ -23,6 +23,11 @@ type searchEngine struct {
 	queryParam string
 }
 
+type correctionResult struct {
+	engine     string
+	correction string
+}
+
 var searchEngines = map[string]searchEngine{
 	"google": searchEngine{
 		name:       "Google",
@@ -51,9 +56,15 @@ var searchEngines = map[string]searchEngine{
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	var corrections = map[string]string{}
+	c := make(chan correctionResult)
 	for k := range searchEngines {
-		corrections[k] = getCorrection(k, r.FormValue("q"))
+		go getCorrection(k, r.FormValue("q"), c)
+	}
+
+	var corrections = map[string]string{}
+	for i := 0; i < len(searchEngines); i++ {
+		r := <-c
+		corrections[r.engine] = r.correction
 	}
 	jsonString, _ := json.Marshal(corrections)
 	io.WriteString(w, string(jsonString))
@@ -70,7 +81,7 @@ func buildUrl(engine string, queryString string) string {
 	return endpoint.String()
 }
 
-func getCorrection(engine string, queryString string) string {
+func getCorrection(engine string, queryString string, c chan correctionResult) {
 	resp, _ := http.Get(buildUrl(engine, queryString))
 	page, _ := ioutil.ReadAll(resp.Body)
 	doc, _ := gokogiri.ParseHtml(page)
@@ -84,7 +95,7 @@ func getCorrection(engine string, queryString string) string {
 		fmt.Println(err)
 	}
 	doc.Free()
-	return sanitize.HTML(correction)
+	c <- correctionResult{engine: engine, correction: sanitize.HTML(correction)}
 }
 
 func main() {
