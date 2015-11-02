@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,7 +32,12 @@ var searchEngines = map[string]searchEngine{
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, getCorrection("google", r.FormValue("q")))
+	var corrections = map[string]string{}
+	for k := range searchEngines {
+		corrections[k] = getCorrection(k, r.FormValue("q"))
+	}
+	jsonString, _ := json.Marshal(corrections)
+	io.WriteString(w, string(jsonString))
 }
 
 func buildUrl(engine string, queryString string) string {
