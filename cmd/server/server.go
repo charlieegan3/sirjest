@@ -23,12 +23,14 @@ type searchEngine struct {
 	queryParam         string
 	suggestedTermQuery string
 	topLinkQuery       string
+	topTitleQuery      string
 }
 
 type correctionResult struct {
 	engine        string
 	SuggestedTerm string
 	TopLink       string
+	TopTitle      string
 }
 
 var searchEngines = map[string]searchEngine{
@@ -38,6 +40,7 @@ var searchEngines = map[string]searchEngine{
 		queryParam:         "q",
 		suggestedTermQuery: css.Convert("#center_col > div > div > a", 0),
 		topLinkQuery:       css.Convert("cite", 0),
+		topTitleQuery:      css.Convert("h3.r", 0),
 	},
 	"yahoo": searchEngine{
 		name:               "Yahoo",
@@ -45,6 +48,7 @@ var searchEngines = map[string]searchEngine{
 		queryParam:         "p",
 		suggestedTermQuery: css.Convert(".compTitle > span > a", 0),
 		topLinkQuery:       css.Convert("ol > li > div > div > div > span", 0),
+		topTitleQuery:      css.Convert("li div.algo h3.title", 0),
 	},
 	"bing": searchEngine{
 		name:               "Bing",
@@ -52,6 +56,7 @@ var searchEngines = map[string]searchEngine{
 		queryParam:         "q",
 		suggestedTermQuery: css.Convert("#sp_requery > h2 > a", 0),
 		topLinkQuery:       css.Convert("cite", 0),
+		topTitleQuery:      css.Convert("li.b_algo h2", 0),
 	},
 	"duckduckgo": searchEngine{
 		name:               "DuckDuckGo",
@@ -59,6 +64,7 @@ var searchEngines = map[string]searchEngine{
 		queryParam:         "q",
 		suggestedTermQuery: css.Convert("#did_you_mean > a", 0),
 		topLinkQuery:       css.Convert(".url", 0),
+		topTitleQuery:      css.Convert("div.links_main a.large", 0),
 	},
 }
 
@@ -94,7 +100,6 @@ func getCorrection(engine string, queryString string, c chan correctionResult) {
 	doc, _ := gokogiri.ParseHtml(page)
 
 	suggestedTermResult, err := doc.Root().Search(searchEngines[engine].suggestedTermQuery)
-
 	suggestedTerm := "NULL"
 	if err == nil && len(suggestedTermResult) > 0 {
 		suggestedTerm = fmt.Sprintf("%v", suggestedTermResult[0])
@@ -103,10 +108,17 @@ func getCorrection(engine string, queryString string, c chan correctionResult) {
 	}
 
 	topLinkResult, err := doc.Root().Search(searchEngines[engine].topLinkQuery)
-
 	topLink := "NULL"
 	if err == nil && len(topLinkResult) > 0 {
 		topLink = fmt.Sprintf("%v", topLinkResult[0])
+	} else if err != nil {
+		fmt.Println(err)
+	}
+
+	topTitleResult, err := doc.Root().Search(searchEngines[engine].topTitleQuery)
+	topTitle := "NULL"
+	if err == nil && len(topTitleResult) > 0 {
+		topTitle = fmt.Sprintf("%v", topTitleResult[0])
 	} else if err != nil {
 		fmt.Println(err)
 	}
@@ -115,7 +127,8 @@ func getCorrection(engine string, queryString string, c chan correctionResult) {
 	c <- correctionResult{
 		engine:        engine,
 		SuggestedTerm: sanitize.HTML(suggestedTerm),
-		TopLink:       strings.Replace(sanitize.HTML(topLink), " ", "", -1),
+		TopLink:       strings.TrimSpace(sanitize.HTML(topLink)),
+		TopTitle:      strings.TrimSpace(sanitize.HTML(topTitle)),
 	}
 }
 
