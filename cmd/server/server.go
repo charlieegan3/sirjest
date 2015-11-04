@@ -69,6 +69,7 @@ var searchEngines = map[string]searchEngine{
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	c := make(chan correctionResult)
 	for k := range searchEngines {
 		go getCorrection(k, r.FormValue("q"), c)
