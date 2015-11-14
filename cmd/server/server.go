@@ -31,6 +31,7 @@ type correctionResult struct {
 	SuggestedTerm string
 	TopLink       string
 	TopTitle      string
+	StatusCode    int
 }
 
 var searchEngines = map[string]searchEngine{
@@ -130,6 +131,7 @@ func getCorrection(engine string, queryString string, c chan correctionResult) {
 		SuggestedTerm: sanitize.HTML(suggestedTerm),
 		TopLink:       strings.TrimSpace(sanitize.HTML(topLink)),
 		TopTitle:      strings.TrimSpace(sanitize.HTML(topTitle)),
+		StatusCode:    resp.StatusCode,
 	}
 }
 
